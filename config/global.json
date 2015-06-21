@@ -1,0 +1,14 @@
+{
+  "global": {
+    "parseVersion": "1.4.2"
+  },
+  "applications": {
+    "Gravity Pencil": {
+      "applicationId": "HEO6qBMPVW2VrQYmQdZn9cgbflOuKY99NIJDa3aE",
+      "masterKey": "l18UXh1An0NKlVVQ6jCpyhxFEoR2e02eExK1ySPP"
+    },
+    "_default": {
+      "link": "Gravity Pencil"
+    }
+  }
+}
