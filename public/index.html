@@ -1,21 +1,177 @@
+<!doctype html>
+<head>
+    <meta charset="utf-8">
 
-<html>
-  <head>
-    <title>My ParseApp site</title>
-    <style>
-    body { font-family: Helvetica, Arial, sans-serif; }
-    div { width: 800px; height: 400px; margin: 40px auto; padding: 20px; border: 2px solid #5298fc; }
-    h1 { font-size: 30px; margin: 0; }
-    p { margin: 40px 0; }
-    em { font-family: monospace; }
-    a { color: #5298fc; text-decoration: none; }
-    </style>
-  </head>
-  <body>
-    <div>
-      <h1>Congratulations! You're already hosting with Parse.</h1>
-      <p>To get started, edit this file at <em>public/index.html</em> and start adding static content.</p>
-      <p>If you want something a bit more dynamic, delete this file and check out <a href="https://parse.com/docs/hosting_guide#webapp">our hosting docs</a>.</p>
+    <title>My Parse App</title>
+    <meta name="description" content="My Parse App">
+    <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script type="text/javascript" src="http://www.parsecdn.com/js/parse-1.4.2.min.js"></script>
+</head>
+
+<body>
+
+<div id="main">
+    <h1>Sandbox</h1>
+
+    Rooms:
+    <select id="room">
+        <option value="Select room" >Select room</option>
+    </select>
+
+    <div style="display:none" class="error">
+        Error:<br>
     </div>
-  </body>
+
+    <div style="display:none" class="success">
+    </div>
+
+    <div style="display:none" class="debug" style="color:#888">
+    </div>
+</div>
+
+<script type="text/javascript">
+    Parse.initialize("HEO6qBMPVW2VrQYmQdZn9cgbflOuKY99NIJDa3aE", "a2jyEi7aySiAFu10y79NTqFlh9xtkTVZZlEepNuf");
+
+    var levelParam = "preRelease1";
+    var roomParam = "androidsx";
+
+    // get all scores
+    fetchAllScores();
+
+    // save one room
+//    generateOneRoomWithUsersFromLevel(levelParam);
+
+    // fill all rooms
+    var Room = Parse.Object.extend("Room");
+    var query2 = new Parse.Query(Room);
+    query2.find({
+        success: function(results) {
+            for (var i = 0; i < results.length; i++) {
+                var object = results[i];
+                $('#room').append($("<option></option>")
+                        .attr("value", object.get('name'))
+                        .text(object.get('name')));
+            }
+        },
+        error: function(error) {
+            logError(error);
+        }
+    });
+
+    // get scores by room
+    $('#room').on('change', function() {
+        if (this.value != "Select room") {
+            fetchScoresByRoomName(this.value);
+        }
+    });
+
+    function fetchScoresByRoomName(roomName) {
+        var Room = Parse.Object.extend("Room");
+        var query2 = new Parse.Query(Room);
+        query2.equalTo("name", roomName);
+        query2.first({
+            success: function(room) {
+                fetchScoresByRoom(room);
+            },
+            error: function(error) {
+                logError(error);
+            }
+        });
+    }
+
+    function fetchScoresByRoom(room) {
+        logSuccess("<br>[By room] Retrieving user scores for room " + room.get('name') + "");
+
+        var userScoresQuery = room.relation("scores").query();
+        userScoresQuery.include("user");
+        userScoresQuery.descending("score");
+
+        userScoresQuery.find({
+            success: function (results) {
+                for (var i = 0; i < results.length; i++) {
+                    var object = results[i];
+                    logSuccess(object.get('user').get('username') + ' - ' + object.get('score'));
+                }
+            },
+            error: function (error) {
+                logError(error);
+            }
+        });
+    }
+
+    function fetchAllScores() {
+        var UserScore = Parse.Object.extend("UserScore");
+        var query1 = new Parse.Query(UserScore);
+        query1.include("user");
+        query1.descending("score");
+        query1.find({
+            success: function(results) {
+                logDebug("<br>[By level] Retrieved " + results.length + " user scores:");
+                for (var i = 0; i < results.length; i++) {
+                    var object = results[i];
+                    logDebug(object.get('user').get('username') + ' - ' + object.get('score') + ' - ' + object.get('level'));
+                }
+            },
+            error: function(error) {
+                logError(error);
+            }
+        });
+    }
+
+    function generateOneRoomWithUsersFromLevel(levelName) {
+        var roomNameParam = "generatedroom" + Math.random().toFixed(3);
+
+        var UserScore = Parse.Object.extend("UserScore");
+        var query3 = new Parse.Query(UserScore);
+        query3.equalTo("level", levelName);
+        query3.find({
+            success: function(results) {
+                var Room = Parse.Object.extend("Room");
+                var room = new Room();
+                room.set('name', roomNameParam);
+                var userScores = room.relation("scores");
+                for (var i = 0; i < results.length; i++) {
+                    var object = results[i];
+                    userScores.add(object);
+                }
+                room.save({
+                    success: function (object) {
+                        logSuccess("<br>We saved the room " + roomNameParam + " with all scores from " + levelParam);
+                    },
+                    error: function (model, error) {
+                        logError(error);
+                    }
+                });
+            },
+            error: function(error) {
+                logError(error);
+            }
+        });
+    }
+
+    function logDebug(text) {
+        $(".debug").append(text + "<br>").show();
+    }
+
+    // Helper functions
+    function logSuccess(text) {
+        $(".success").append(text + "<br>").show();
+    }
+
+    function logError(error) {
+        console.debug(error);
+        $(".error").append("Error: " + error.code + " " + error.message).show();
+    }
+
+    function sleepFor(sleepDuration){
+        var now = new Date().getTime();
+        while(new Date().getTime() < now + sleepDuration){ /* do nothing */ }
+    }
+
+</script>
+</body>
+
 </html>
