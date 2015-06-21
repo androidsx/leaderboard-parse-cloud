@@ -16,7 +16,13 @@
 <div id="main">
     <h1>Sandbox</h1>
 
-    Rooms:
+    Create a room and assign all scores from level:<br>
+    Level: <input type="text" value="preRelease1" id="level-text"/><br>
+    Room name: <input type="text" value="YourRoomName" id="room-text"/><br>
+    <input type="submit" value="Generate room" id="create-room" /><br>
+
+    <br><br>
+    Show scores from the room:
     <select id="room">
         <option value="Select room" >Select room</option>
     </select>
@@ -35,14 +41,8 @@
 <script type="text/javascript">
     Parse.initialize("HEO6qBMPVW2VrQYmQdZn9cgbflOuKY99NIJDa3aE", "a2jyEi7aySiAFu10y79NTqFlh9xtkTVZZlEepNuf");
 
-    var levelParam = "preRelease1";
-    var roomParam = "androidsx";
-
     // get all scores
     fetchAllScores();
-
-    // save one room
-//    generateOneRoomWithUsersFromLevel(levelParam);
 
     // fill all rooms
     var Room = Parse.Object.extend("Room");
@@ -66,6 +66,10 @@
         if (this.value != "Select room") {
             fetchScoresByRoomName(this.value);
         }
+    });
+
+    $('#create-room').click(function() {
+        generateOneRoomWithUsersFromLevel($('#level-text').val(), $('#room-text').val());
     });
 
     function fetchScoresByRoomName(roomName) {
@@ -121,9 +125,7 @@
         });
     }
 
-    function generateOneRoomWithUsersFromLevel(levelName) {
-        var roomNameParam = "generatedroom" + Math.random().toFixed(3);
-
+    function generateOneRoomWithUsersFromLevel(levelName, roomNameParam) {
         var UserScore = Parse.Object.extend("UserScore");
         var query3 = new Parse.Query(UserScore);
         query3.equalTo("level", levelName);
@@ -139,7 +141,7 @@
                 }
                 room.save({
                     success: function (object) {
-                        logSuccess("<br>We saved the room " + roomNameParam + " with all scores from " + levelParam);
+                        logSuccess("<br>We saved the room " + roomNameParam + " with all scores from " + levelName);
                     },
                     error: function (model, error) {
                         logError(error);
