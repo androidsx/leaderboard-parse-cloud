@@ -250,110 +250,35 @@ Parse.Cloud.beforeSave("Room", function (request, response) {
     if (room.existed() && room.dirty('scores')) {
         // Make sure only one person is added, just in case we create a global leaderboard and we notify everyone
         var added = room.op('scores').added();
-        var username = "pepe";
         if (added.length == 1) {
-            added.forEach(function (pointer) {
-                pointer.fetch(function (userScore) {
-                    var userQuery = new Parse.Query(Parse.User);
-                    userQuery.get(userScore.get('user').id, {
-                        success: function(result) {
-                            username = result.get('username');
-                            sendPushAdvanced(room, username, response);
-                        },
-                        error: function(error) {
-                            console.log(error);
-                        }
-                    });
-                });
+            var userScoreAddedId = added[0].id;
+
+            // Retrieve the score who was just inserted
+            var userScoreQuery = new Parse.Query("UserScore");
+            userScoreQuery.equalTo("objectId", userScoreAddedId);
+            userScoreQuery.include('user');
+            userScoreQuery.first({
+                success: function(result) {
+                    if (result) {
+                        sendAllUsersInRoomThatUserJoined(room, result.get('user'), response);
+                    } else {
+                        console.log("Something weird, the user score just added to the relation does not seem to exist?")
+                        response.success();
+                    }
+                },
+                error: function(error) {
+                    response.error(error);
+                }
             });
         } else {
-            console.log("More than one person joined a room");
+            console.log("More than one person joined a room, skip")
+            response.success("More than one person joined a room, skip");
         }
     } else {
-        console.log("We just created a new leaderboard YAY");
-        response.success();
+        console.log("Something weird, the user score just added to the relation does not seem to exist?")
+        response.success("Something weird, the user score just added to the relation does not seem to exist?");
     }
 });
-
-function sendPushAdvanced(room, username, response) {
-    // Get the users that were in the room before this new user
-    var scoresQuery = room.relation('scores').query();
-    scoresQuery.include("user");
-    scoresQuery.find({
-        success: function (results) {
-            // this is going to be before saving the new user(s), so all these guys needs to be notified
-            console.log("Notifying to the room " + room.get('name') + " that a friend joined to: \n");
-
-            var usersArray = new Array();
-            results.forEach(function (userScore) {
-                usersArray.push(userScore.get('user'));
-                console.log("Tentative push to " + userScore.get('user').get('username') + " that " + username + " joined the leaderboard " + room.get('name'));
-            });
-
-//            var pushQuery = new Parse.Query(Parse.Installation);
-//            pushQuery.containedIn('user', usersArray);
-//
-//            Parse.Push.send({
-//                where: pushQuery,
-//                data: {
-//                    alert: username + " joined the room " + room.get('name')
-//                }
-//            }, {
-//                success: function() {
-//                    response.success();
-//                },
-//                error: function(error) {
-//                    response.error(error);
-//                }
-//            });
-
-            response.success();
-        },
-        error: function (error) {
-            console.log(JSON.stringify(error))
-            response.error(error);
-        }
-    });
-}
-
-function sendPushSimple(room, username, response) {
-    var scoresQuery = room.relation('scores').query();
-    scoresQuery.include('user');
-    scoresQuery.find({
-        success: function (results) {
-            console.log("Notifying to the room " + room.get('name') + " that a friend joined to: \n");
-
-            var usersArray = new Array();
-            results.forEach(function (userScore) {
-                usersArray.push(userScore.get('user'));
-                console.log("Tentative push to " + userScore.get('user').get('username') + " that " + username + " joined the leaderboard " + room.get('name'));
-            });
-
-//            var pushQuery = new Parse.Query(Parse.Installation);
-//            pushQuery.containedIn('user', usersArray);
-//
-//            Parse.Push.send({
-//                where: pushQuery,
-//                data: {
-//                    alert: username + " joined the room " + room.get('name')
-//                }
-//            }, {
-//                success: function() {
-//                    response.success();
-//                },
-//                error: function(error) {
-//                    response.error(error);
-//                }
-//            });
-
-            response.success();
-        },
-        error: function (error) {
-            console.log(JSON.stringify(error))
-            response.error(error);
-        }
-    });
-}
 
 // ---- Push for friend beated score in a room ----
 
@@ -368,7 +293,7 @@ function sendPushSimple(room, username, response) {
 Parse.Cloud.beforeSave("UserScore", function (request, response) {
     var newUserScore = request.object;
 
-    // default level
+    // Set default level for new users
     if (!newUserScore.existed()) {
         var level = newUserScore.get("level");
         if (!level) {
@@ -378,7 +303,14 @@ Parse.Cloud.beforeSave("UserScore", function (request, response) {
         return;
     }
 
-    // send friend beat
+    // Skip pushes if the score has not changed
+    if (!newUserScore.dirty('score')) {
+        console.log("The score from " + oldUserScore.get('user').get('username') + " has not changed, skip pushes");
+        response.success();
+        return;
+    }
+
+    // Get the last score from this user
     var query = new Parse.Query("UserScore");
     query.include('user');
     query.get(newUserScore.id, {
@@ -386,7 +318,13 @@ Parse.Cloud.beforeSave("UserScore", function (request, response) {
             var newScore = newUserScore.get('score');
             var oldScore = oldUserScore.get('score');
 
-            console.log("Old score is " + oldScore + " and new is " + newScore);
+            if (newScore <= oldScore) {
+                console.log("The new score from " + oldUserScore.get('user').get('username') + " is lower that the old, skip pushes");
+                response.success();
+                return;
+            }
+
+            console.log("The user " + oldUserScore.get('user').get('username') + " just beated with " + newScore + " his old score " + oldScore);
 
             // relatedto
             var roomQuery = new Parse.Query("Room");
@@ -474,4 +412,44 @@ function emptyCallback() {
             console.log(JSON.stringify(error))
         }
     }
+}
+
+function sendAllUsersInRoomThatUserJoined(room, userJoined, response) {
+    // Get the users that were in the room before this new user
+    var scoresQuery = room.relation('scores').query();
+    scoresQuery.include("user");
+    scoresQuery.find({
+        success: function (results) {
+            // This is going to be before saving the new user(s), so all these guys needs to be notified
+            console.log("Notifying to the room " + room.get('name') + " that " + userJoined.get('username') + " joined");
+
+            var usersArray = new Array();
+            results.forEach(function (userScore) {
+                usersArray.push(userScore.get('user'));
+                console.log("Tentative push to " + userScore.get('user').get('username') + " that " + userJoined.get('username') + " joined the leaderboard " + room.get('name'));
+            });
+
+//            var pushQuery = new Parse.Query(Parse.Installation);
+//            pushQuery.containedIn('user', usersArray);
+//
+//            Parse.Push.send({
+//                where: pushQuery,
+//                data: {
+//                    alert: username + " joined the room " + room.get('name')
+//                }
+//            }, {
+//                success: function() {
+//                    response.success();
+//                },
+//                error: function(error) {
+//                    response.error(error);
+//                }
+//            });
+
+            response.success();
+        },
+        error: function (error) {
+            response.error(error);
+        }
+    });
 }
