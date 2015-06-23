@@ -7,7 +7,7 @@ Parse.Cloud.define("dropall", function (request, response) {
             results.forEach(function (result) {
                 result.destroy()
             })
-            var query = new Parse.Query("UserScore");
+            var query = new Parse.Query("HighScore");
             query.find({
                 success: function (results2) {
                     results2.forEach(function (result) {
@@ -17,7 +17,6 @@ Parse.Cloud.define("dropall", function (request, response) {
                     var query = new Parse.Query(Parse.User);
                     query.find({
                         success: function (results3) {
-                            console.log("lala")
                             results3.forEach(function (result) {
                                 result.destroy();
                             })
@@ -52,172 +51,148 @@ Parse.Cloud.define("dropallinstallations", function (request, response) {
 });
 
 Parse.Cloud.define("scaffolding", function (request, response) {
-    // users
-    var usersArray = new Array();
+    // create rooms
+    var rooms = new Array();
+    var Room = Parse.Object.extend("Room");
 
-    var ompemi = new Parse.User({
-        username: 'ompemi',
-        password: 'ompemi'
+    var room1 = new Room({
+        name: "roomWithOmarJosepPocho"
     });
-    usersArray.push(ompemi);
-
-    var josep = new Parse.User({
-        username: 'josep',
-        password: 'josep'
+    var room2 = new Room({
+        name: "roomWithPauEspinchi"
     });
-    usersArray.push(josep);
+    Parse.Object.saveAll(rooms, {
+        success: function(list) {
+            // users
+            var usersArray = new Array();
 
-    var pau = new Parse.User({
-        username: 'pau',
-        password: 'pau'
-    });
-    usersArray.push(pau);
-
-    var pocho = new Parse.User({
-        username: 'pocho',
-        password: 'pocho'
-    });
-    usersArray.push(pocho);
-
-    var espinchi = new Parse.User({
-        username: 'espinchi',
-        password: 'espinchi'
-    });
-    usersArray.push(espinchi);
-
-    var numUsers = usersArray.length;
-    usersArray.forEach(function (user) {
-        user.signUp(null, {
-            success: function (list) {
-                numUsers--;
-                if (numUsers == 0) {
-                    // user scores
-                    var userScoresArray = new Array();
-                    var UserScore = Parse.Object.extend("UserScore");
-
-                    var userScoreOmpemi = new UserScore({
-                        user: ompemi,
-                        score: 100
-                    });
-                    userScoresArray.push(userScoreOmpemi);
-
-                    var userScoreJosep = new UserScore({
-                        user: josep,
-                        score: 200
-                    });
-                    userScoresArray.push(userScoreJosep)
-
-                    var userScorePocho = new UserScore({
-                        user: pocho,
-                        score: 300
-                    });
-                    userScoresArray.push(userScorePocho)
-
-
-                    var userScorePau = new UserScore({
-                        user: pau,
-                        score: 1000
-                    });
-                    userScoresArray.push(userScorePau);
-
-                    var userScoreEspinchi = new UserScore({
-                        user: espinchi,
-                        score: 2000
-                    });
-                    userScoresArray.push(userScoreEspinchi);
-
-                    Parse.Object.saveAll(userScoresArray, {
-                        success: function (list) {
-                            // create rooms
-                            var rooms = new Array();
-                            var Room = Parse.Object.extend("Room");
-
-                            var room1 = new Room({
-                                name: "roomWithOmarJosepPocho"
-                            });
-                            var userScoresRoom = room1.relation("scores");
-                            userScoresRoom.add(userScoreOmpemi);
-                            userScoresRoom.add(userScoreJosep);
-                            userScoresRoom.add(userScorePocho);
-                            rooms.push(room1);
-
-                            var room2 = new Room({
-                                name: "roomWithPauEspinchi"
-                            });
-                            var userScoresRoom = room2.relation("scores");
-                            userScoresRoom.add(userScoreEspinchi);
-                            userScoresRoom.add(userScorePau);
-                            rooms.push(room2);
-
-                            Parse.Object.saveAll(rooms, emptyCallbackAndFinish(response));
-                        },
-                        error: function (error) {
-                            response.error(error);
-                        }
-                    });
-                }
-            },
-            error: function (error) {
-                response.error(error);
-            }
-        });
-    })
-});
-
-
-Parse.Cloud.define("joinroom", function (request, response) {
-    var randomNumber = Math.floor((Math.random() * 1000) + 1);
-
-    var user = new Parse.User({
-        username: 'justjoineduser' + randomNumber,
-        password: 'justjoineduser'
-    });
-    user.signUp(null, {
-        success: function () {
-            var UserScore = Parse.Object.extend("UserScore");
-            var userScore = new UserScore({
-                user: user,
-                score: randomNumber
+            var ompemi = new Parse.User({
+                username: 'ompemi',
+                password: "lala"
             });
-            userScore.save({
-                success: function() {
-                    var Room = Parse.Object.extend("Room");
-                    var query = new Parse.Query(Room);
-                    query.equalTo('name', "roomWithOmarJosepPocho");
-                    query.first({
-                        success: function(room) {
-                            if (room) {
-                                var userScoresRoom = room.relation("scores");
-                                userScoresRoom.add(userScore);
-                                room.save(emptyCallbackAndFinish(response));
-                            } else {
-                                response.success("No room found")
-                            }
+            ompemi.addUnique('rooms' , room1);
+            usersArray.push(ompemi);
+
+            var josep = new Parse.User({
+                username: 'josep',
+                password: "lala"
+            });
+            josep.addUnique('rooms' , room1);
+            usersArray.push(josep);
+
+            var pocho = new Parse.User({
+                username: 'pocho',
+                password: "lala"
+            });
+            pocho.addUnique('rooms' , room1);
+            usersArray.push(pocho);
+
+            var pau = new Parse.User({
+                username: 'pau',
+                password: "lala"
+            });
+            pau.addUnique('rooms' , room2);
+            usersArray.push(pau);
+
+            var espinchi = new Parse.User({
+                username: 'espinchi',
+                password: "lala"
+            });
+            espinchi.addUnique('rooms' , room2);
+            usersArray.push(espinchi);
+
+            var numUsers = usersArray.length;
+            usersArray.forEach(function (user) {
+                user.signUp(null, {
+                    success: function (list) {
+                        numUsers--;
+                        if (numUsers == 0) {
+                            // user scores
+                            var highScoresArray = new Array();
+                            var HighScore = Parse.Object.extend("HighScore");
+
+                            var highScoreOmpemi = new HighScore({
+                                user: ompemi,
+                                score: 100
+                            });
+                            highScoresArray.push(highScoreOmpemi);
+
+                            var highScoreJosep = new HighScore({
+                                user: josep,
+                                score: 200
+                            });
+                            highScoresArray.push(highScoreJosep)
+
+                            var highScorePocho = new HighScore({
+                                user: pocho,
+                                score: 300
+                            });
+                            highScoresArray.push(highScorePocho)
+
+
+                            var highScorePau = new HighScore({
+                                user: pau,
+                                score: 1000
+                            });
+                            highScoresArray.push(highScorePau);
+
+                            var highScoreEspinchi = new HighScore({
+                                user: espinchi,
+                                score: 2000
+                            });
+                            highScoresArray.push(highScoreEspinchi);
+
+                            Parse.Object.saveAll(highScoresArray, emptyCallbackAndFinish(response));
                         }
-                    })
-                },
-                error: function(error) {
-                    response.error(error);
-                }
-            })
+                    },
+                    error: function(error) {
+                        response.error(error);
+                    }
+
+                });
+            });
         },
         error: function(error) {
-            response.error("Most likely duplicated user" + error);
+            response.error(error);
         }
     });
 });
 
-Parse.Cloud.define("newscore", function (request, response) {
+Parse.Cloud.define("joinroom", function (request, response) {
+    var Room = Parse.Object.extend("Room");
+    var query = new Parse.Query(Room);
+    query.equalTo('name', "roomWithOmarJosepPocho");
+    query.first({
+        success: function(room) {
+            if (room) {
+                var randomNumber = Math.floor((Math.random() * 1000) + 1);
+
+                var user = new Parse.User({
+                    username: 'justjoineduser' + randomNumber,
+                    password: "lala"
+                });
+                user.addUnique('rooms', room)
+                user.save(emptyCallbackAndFinish(response));
+            } else {
+                response.success("No room found")
+            }
+        }
+    });
+});
+
+Parse.Cloud.define("updatescore", function (request, response) {
     var usernameToIncreasePoints = "josep";
     var numPointsIncrease = 101;
+    var level = "preRelease1";
 
     var userQuery = new Parse.Query(Parse.User);
     userQuery.equalTo('username', usernameToIncreasePoints)
     userQuery.first({
         success: function(result) {
             if (result) {
-                var userQuery = new Parse.Query("UserScore");
+                var userQuery = new Parse.Query("HighScore");
                 userQuery.equalTo('user', result)
+                userQuery.equalTo('level', level)
                 userQuery.first({
                     success: function (result) {
                         if (result) {
@@ -239,155 +214,167 @@ Parse.Cloud.define("newscore", function (request, response) {
     });
 });
 
+Parse.Cloud.define("newscore", function (request, response) {
+    var numPoints = 5001;
+    var level = "preRelease1";
+
+    var Room = Parse.Object.extend("Room");
+    var query = new Parse.Query(Room);
+    query.equalTo('name', "roomWithOmarJosepPocho");
+    query.first({
+        success: function(room) {
+            if (room) {
+                var randomNumber = Math.floor((Math.random() * 1000) + 1);
+
+                var user = new Parse.User({
+                    username: 'justjoineduser' + randomNumber,
+                    password: "lala"
+                });
+                user.addUnique('rooms', room)
+                user.save(null, {
+                    success: function() {
+                        var HighScore = Parse.Object.extend("HighScore");
+                        var highScore = new HighScore();
+                        highScore.set('user', user)
+                        highScore.set('level', level)
+                        highScore.set('score', numPoints)
+                        highScore.save(null, {
+                            success: function() {
+                                response.success()
+                            }, error: function(error) {
+                                response.error("LALAALA");
+                            }
+                        });
+                    }, error: function(error) {
+                        response.error(error);
+                    }
+                });
+            } else {
+                response.success("No room found")
+            }
+        }
+    });
+});
+
 
 // ---- Push for friend joined room ----
 
 // CLOUD: afterUpdate of a Room with a new score added to the relation scores:
 //          get all users of that room except the one who was just added
 //              send them a push notification
-Parse.Cloud.beforeSave("Room", function (request, response) {
-    var room = request.object;
-    if (room.existed() && room.dirty('scores')) {
-        // Make sure only one person is added, just in case we create a global leaderboard and we notify everyone
-        var added = room.op('scores').added();
+Parse.Cloud.beforeSave(Parse.User, function (request, response) {
+    var user = request.object;
+    // 0. Only when the user added rooms
+    if (user.dirty('rooms') && user.get('rooms').length > 0 &&
+            (user.op('rooms') instanceof Parse.Op.AddUnique || user.op('rooms') instanceof Parse.Op.Add)) {
+        // 0. We only trigger pushes where there is only one room added
+        var added = user.op('rooms').objects();
         if (added.length == 1) {
-            var userScoreAddedId = added[0].id;
+            var roomId = added[0].id;
 
-            // Retrieve the score who was just inserted
-            var userScoreQuery = new Parse.Query("UserScore");
-            userScoreQuery.equalTo("objectId", userScoreAddedId);
-            userScoreQuery.include('user');
-            userScoreQuery.first({
-                success: function(result) {
-                    if (result) {
-                        sendAllUsersInRoomThatUserJoined(room, result.get('user'), response);
-                    } else {
-                        console.log("Something weird, the user score just added to the relation does not seem to exist?")
-                        response.success();
-                    }
-                },
-                error: function(error) {
-                    response.error(error);
-                }
+            // 1. Get the room who has a new member
+            var room = new Parse.Query("Room");
+            room.equalTo('objectId', roomId);
+            room.get(roomId).then(function(room) {
+                // 2. Retrieve all room members of the room with one new member
+                var userQuery = new Parse.Query(Parse.User);
+                userQuery.equalTo('rooms', room);
+                return Parse.Promise.when(userQuery.find(), room);
+            }).then(function(members, room) {
+                // 3. For every user in that room, notify them! The new user will not be notified as this is pre-save
+                console.log("Notifying " + members.length + " members from " + room.get('name') + " that " + user.get('username') + " joined");
+                members.forEach(function (member) {
+                    console.log("Tentative push to " + member.get('username') + " that " + user.get('username') + " joined the leaderboard " + room.get('name'));
+                });
+
+//                var pushQuery = new Parse.Query(Parse.Installation);
+//                pushQuery.containedIn("user", members);
+//                return Parse.Push.send({
+//                    where: pushQuery,
+//                    data: {
+//                        alert: oldHighScore.get('user').get('username') + " just beated you with " + newScore + " m"
+//                    }
+//                });
+
+                response.success();
+            }, function(error) {
+                response.error(error);
             });
         } else {
             console.log("More than one person joined a room, skip")
-            response.success("More than one person joined a room, skip");
+            response.success();
         }
     } else {
         console.log("Something weird, the user score just added to the relation does not seem to exist?")
-        response.success("Something weird, the user score just added to the relation does not seem to exist?");
+        response.success();
     }
 });
 
 // ---- Push for friend beated score in a room ----
 
-// CLOUD: afterUpdate of a UserScore:
+// CLOUD: afterUpdate of a HighScore:
 //          var oldScore = oldScore
 //          var newScore = newScore
-//          For every room that the UserScore is linked:
-//              For every UserScore except the one who was just updated
+//          For every room that the HighScore is linked:
+//              For every HighScore except the one who was just updated
 //                  if score > oldScore and score <= newScore
 //                      send them a push notification
-
-Parse.Cloud.beforeSave("UserScore", function (request, response) {
-    var newUserScore = request.object;
+Parse.Cloud.beforeSave("HighScore", function (request, response) {
+    var highScore = request.object;
 
     // Set default level for new users
-    if (!newUserScore.existed()) {
-        var level = newUserScore.get("level");
-        if (!level) {
-            newUserScore.set("level", "preRelease1");
+    var isHighScoreBeingUpdated = highScore.existed();
+    if (!isHighScoreBeingUpdated) {
+        if (!highScore.get("level")) {
+            highScore.set("level", "preRelease1");
         }
-        response.success();
-        return;
     }
 
     // Skip pushes if the score has not changed
-    if (!newUserScore.dirty('score')) {
-        console.log("The score from " + oldUserScore.get('user').get('username') + " has not changed, skip pushes");
+    if (!highScore.dirty('score')) {
+        console.log("The score from " + highScore.get('user').get('username') + " has not changed, skip pushes");
         response.success();
         return;
     }
 
-    // Get the last score from this user
-    var query = new Parse.Query("UserScore");
-    query.include('user');
-    query.get(newUserScore.id, {
-        success: function (oldUserScore) {
-            var newScore = newUserScore.get('score');
-            var oldScore = oldUserScore.get('score');
+    if (isHighScoreBeingUpdated) {
+        // 1. Get the last score from this user
+        var query = new Parse.Query("HighScore");
+        query.include('user');
+        query.get(highScore.id, {
+            success: function (oldHighScore) {
+                var newScore = highScore.get('score');
+                var level = highScore.get('level');
+                var oldScore = oldHighScore.get('score');
 
-            if (newScore <= oldScore) {
-                console.log("The new score from " + oldUserScore.get('user').get('username') + " is lower that the old, skip pushes");
-                response.success();
-                return;
-            }
-
-            console.log("The user " + oldUserScore.get('user').get('username') + " just beated with " + newScore + " his old score " + oldScore);
-
-            // relatedto
-            var roomQuery = new Parse.Query("Room");
-            roomQuery.equalTo('scores', newUserScore);
-            roomQuery.find({
-                success: function (rooms) {
-                    console.log("Found " + rooms.length + " rooms where the user who did the highscore is");
-
-                    if (rooms.length >= 0) {
-                        rooms.forEach(function (room) {
-                            console.log("Room " + room.get('name'));
-
-                            var scoresQuery = room.relation('scores').query();
-                            scoresQuery.greaterThan("score", oldScore);
-                            scoresQuery.lessThanOrEqualTo("score", newScore);
-
-                            // testing
-                            scoresQuery.include('user');
-                            scoresQuery.find({
-                                success: function (results) {
-                                    results.forEach(function (result) {
-                                        console.log("Tentative push to " + result.get('user').get('username') + ": " + oldUserScore.get('user').get('username') + " just beated you with " + newScore + " m");
-                                    });
-
-                                    response.success();
-                                },
-                                error: function(error) {
-                                    response.error(error)
-                                }
-                            });
-
-//                        var pushQuery = new Parse.Query(Parse.Installation);
-//                        pushQuery.matchesKeyInQuery("user", "user", scoresQuery);
-//                        Parse.Push.send({
-//                            where: pushQuery,
-//                            data: {
-//                                alert: oldUserScore.get('user').get('username') + " just beated you with " + newScore + " m"
-//                            }
-//                        }, {
-//                            success: function() {
-//                                console.log(oldUserScore.get('user').get('username') + " just beated you with " + newScore + " m")
-//                            },
-//                            error: function(error) {
-//                                console.log(JSON.stringify(error))
-//                            }
-//                        });
-                        });
-                    } else {
-                        response.success();
-                    }
-                },
-                error: function (error) {
-                    console.log(JSON.stringify(error))
-                    response.error(error);
+                if (newScore <= oldScore) {
+                    console.log("The new score from " + oldHighScore.get('user').get('username') + " is lower that the old, skip pushes");
+                    response.success();
+                    return;
                 }
-            });
-        },
 
-        error: function (object, error) {
-            console.log(JSON.stringify(error))
-            response.error(error);
-        }
-    });
+                sendPushesAfterHighScore(oldHighScore.get('user'), level, newScore, oldScore, response);
+            },
+            error: function(error) {
+                response.error(error);
+            }
+        });
+    } else {
+        // New score on this level
+        var userQuery = new Parse.Query(Parse.User);
+        userQuery.get(highScore.get('user').id, {
+            success: function(user) {
+                var newScore = highScore.get('score');
+                var level = highScore.get('level');
+                var oldScore = 0;
+
+                sendPushesAfterHighScore(user, level, newScore, oldScore, response);
+            },
+            error: function(error) {
+                response.error(error);
+            }
+        });
+    }
 });
 
 
@@ -404,32 +391,32 @@ function emptyCallbackAndFinish(response) {
     }
 }
 
-function emptyCallback() {
-    return {
-        success: function (list) {
-        },
-        error: function (error) {
-            console.log(JSON.stringify(error))
-        }
-    }
-}
+function sendPushesAfterHighScore(user, level, newScore, oldScore, response) {
+    var rooms = user.get('rooms');
 
-function sendAllUsersInRoomThatUserJoined(room, userJoined, response) {
-    // Get the users that were in the room before this new user
-    var scoresQuery = room.relation('scores').query();
-    scoresQuery.include("user");
+    console.log("The user " + user.get('username') + ((oldScore <= 0) ? (" created his first high score " + newScore) : (" just did " + newScore + " points, his old score was " + oldScore)));
+    console.log("The user has " + rooms.length + " rooms that should be notified, in case it beat the score of someone");
+
+    // 2. Get query for all users that belongs to these rooms
+    var userQuery = new Parse.Query(Parse.User);
+    userQuery.containedIn('rooms', rooms);
+    userQuery.notEqualTo('objectId', user.id);
+
+    // 3. Filter all user scores in the score interval that matches previous user query and the level of the highscore
+    var scoresQuery = new Parse.Query("HighScore");
+    scoresQuery.include('user');
+    scoresQuery.matchesQuery('user', userQuery);
+    scoresQuery.equalTo("level", level);
+    scoresQuery.greaterThan("score", oldScore);
+    scoresQuery.lessThanOrEqualTo("score", newScore);
+
     scoresQuery.find({
-        success: function (results) {
-            // This is going to be before saving the new user(s), so all these guys needs to be notified
-            console.log("Notifying to the room " + room.get('name') + " that " + userJoined.get('username') + " joined");
-
-            var usersArray = new Array();
-            results.forEach(function (userScore) {
-                usersArray.push(userScore.get('user'));
-                console.log("Tentative push to " + userScore.get('user').get('username') + " that " + userJoined.get('username') + " joined the leaderboard " + room.get('name'));
+        success: function(scoreUsers) {
+            scoreUsers.forEach(function (scoreUser) {
+                console.log("Tentative push to " + scoreUser.get('user').get('username') + ": " + user.get('username') + " just beated you with " + newScore + " m");
             });
 
-//            var pushQuery = new Parse.Query(Parse.Installation);
+            //var pushQuery = new Parse.Query(Parse.Installation);
 //            pushQuery.containedIn('user', usersArray);
 //
 //            Parse.Push.send({
@@ -447,8 +434,10 @@ function sendAllUsersInRoomThatUserJoined(room, userJoined, response) {
 //            });
 
             response.success();
+
         },
-        error: function (error) {
+        error: function(error) {
+            console.log(JSON.stringify(error))
             response.error(error);
         }
     });
