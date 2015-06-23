@@ -287,15 +287,15 @@ Parse.Cloud.beforeSave(Parse.User, function (request, response) {
                     console.log("Tentative push to " + member.get('username') + " that " + user.get('username') + " joined the leaderboard " + room.get('name'));
                 });
 
-//                var pushQuery = new Parse.Query(Parse.Installation);
-//                pushQuery.containedIn("user", members);
-//                return Parse.Push.send({
-//                    where: pushQuery,
-//                    data: {
-//                        alert: oldHighScore.get('user').get('username') + " just beated you with " + newScore + " m"
-//                    }
-//                });
-
+                var pushQuery = new Parse.Query(Parse.Installation);
+                pushQuery.containedIn("user", members);
+                return Parse.Push.send({
+                    where: pushQuery,
+                    data: {
+                        alert: "Your friend " +  user.get('username') + " just joined!"
+                    }
+                });
+            }).then(function(result) {
                 response.success();
             }, function(error) {
                 response.error(error);
@@ -412,33 +412,32 @@ function sendPushesAfterHighScore(user, level, newScore, oldScore, response) {
 
     scoresQuery.find({
         success: function(scoreUsers) {
+            var usersArray = new Array();
             scoreUsers.forEach(function (scoreUser) {
                 console.log("Tentative push to " + scoreUser.get('user').get('username') + ": " + user.get('username') + " just beated you with " + newScore + " m");
+                usersArray.push(scoreUser.get('user'));
             });
 
-            //var pushQuery = new Parse.Query(Parse.Installation);
-//            pushQuery.containedIn('user', usersArray);
-//
-//            Parse.Push.send({
-//                where: pushQuery,
-//                data: {
-//                    alert: username + " joined the room " + room.get('name')
-//                }
-//            }, {
-//                success: function() {
-//                    response.success();
-//                },
-//                error: function(error) {
-//                    response.error(error);
-//                }
-//            });
-
-            response.success();
-
+            var pushQuery = new Parse.Query(Parse.Installation);
+            pushQuery.containedIn('user', usersArray);
+            Parse.Push.send({
+                where: pushQuery,
+                data: {
+                    alert: user.get('username') + " just beat you with " + newScore + " m"
+                }
+            }, {
+                success: function() {
+                    response.success();
+                },
+                error: function(error) {
+                    console.log("Could not send the pushes: " + error.message)
+                    response.success();
+                }
+            });
         },
         error: function(error) {
-            console.log(JSON.stringify(error))
-            response.error(error);
+            console.log("Could not see the highscores: " + error.message)
+            response.success();
         }
     });
 }
