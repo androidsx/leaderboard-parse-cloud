@@ -301,11 +301,11 @@ Parse.Cloud.beforeSave(Parse.User, function (request, response) {
                 response.error(error);
             });
         } else {
-            console.log("More than one person joined a room, skip")
+            console.log("A user has joined to more than one room, skip")
             response.success();
         }
     } else {
-        console.log("Something weird, the user score just added to the relation does not seem to exist?")
+        console.log("There has not been any room added")
         response.success();
     }
 });
