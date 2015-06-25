@@ -264,6 +264,15 @@ Parse.Cloud.define("newscore", function (request, response) {
 //              send them a push notification
 Parse.Cloud.beforeSave(Parse.User, function (request, response) {
     var user = request.object;
+
+    // Make sure a room is an empty array and not null, to ease the client and detect always if there are new rooms
+    if (!user.existed() && (user.get('rooms') == null || user.get('rooms').length == 0)) {
+        console.log("Setting rooms to an empty array");
+        user.set('rooms', new Array());
+        response.success();
+        return;
+    }
+
     // 0. Only when the user added rooms
     if (user.dirty('rooms') && user.get('rooms').length > 0 &&
             (user.op('rooms') instanceof Parse.Op.AddUnique || user.op('rooms') instanceof Parse.Op.Add)) {
